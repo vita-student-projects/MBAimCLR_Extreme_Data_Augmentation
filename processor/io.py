@@ -56,6 +56,7 @@ class IO():
 
         # gpu
         if self.arg.use_gpu:
+            print(torch.cuda.is_available())###ADD###
             gpus = torchlight.visible_gpu(self.arg.device)
             torchlight.occupy_gpu(gpus)
             self.gpus = gpus
