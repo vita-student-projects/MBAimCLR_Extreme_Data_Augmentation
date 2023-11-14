@@ -1,7 +1,7 @@
 work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/pretext
 
-weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/pretext/epoch1_model.pttest
-resume: False
+weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/pretext/epoch240_model.pt
+resume: True
 
 # feeder
 train_feeder: feeder.ntu_feeder.Feeder_triple
@@ -46,7 +46,7 @@ device: [2]
 batch_size: 32
 test_batch_size: 128
 num_epoch: 300
-start_epoch: 0
+start_epoch: 240
 stream: 'joint'
 
 # nearest neighbor mining

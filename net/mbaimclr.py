@@ -36,14 +36,14 @@ class MBAimCLR(nn.Module):
                                           depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
                                           maxlen=clip_len)
 
-            if num_class != -1:  # hack: brute-force replacement
-                dim_mlp = self.encoder_q.fc.weight.shape[1]
-                self.encoder_q.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp),
-                                                  nn.ReLU(),
-                                                  self.encoder_q.fc)
-                self.encoder_k.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp),
-                                                  nn.ReLU(),
-                                                  self.encoder_k.fc)
+            # if num_class != -1:  # hack: brute-force replacement
+            #     dim_mlp = self.encoder_q.fc.weight.shape[1]
+            #     self.encoder_q.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp),
+            #                                       nn.ReLU(),
+            #                                       self.encoder_q.fc)
+            #     self.encoder_k.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp),
+            #                                       nn.ReLU(),
+            #                                       self.encoder_k.fc)
 
             for param_q, param_k in zip(self.encoder_q.parameters(), self.encoder_k.parameters()):
                 param_k.data.copy_(param_q.data)  # initialize
@@ -86,7 +86,9 @@ class MBAimCLR(nn.Module):
             return self.nearest_neighbors_mining(im_q, im_k, im_q_extreme, topk)
 
         if not self.pretrain:
-            return self.encoder_q(im_q)
+            debug = self.encoder_q(im_q)
+            print(debug.size)
+            return debug
 
         # Obtain the normally augmented query feature
         q = self.encoder_q(im_q)  # NxC

@@ -1,8 +1,9 @@
 work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/linear_eval
 
 # weights: /data/gty/released_model/ntu60_xsub_joint.pt
-weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/pretext/epoch1_model.pttest
+weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/pretext/epoch300_model.pt
 ignore_weights: [encoder_q.head, encoder_k, queue]
+resume: True
 
 # feeder
 train_feeder: feeder.ntu_feeder.Feeder_single
@@ -52,7 +53,7 @@ step: [80]
 device: [2]
 batch_size: 32
 test_batch_size: 128
-num_epoch: 1
+num_epoch: 100
 stream: 'joint'
 
 # log

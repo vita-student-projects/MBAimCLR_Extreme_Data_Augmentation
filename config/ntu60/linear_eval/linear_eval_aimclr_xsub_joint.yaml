@@ -1,8 +1,9 @@
-work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/aimclr_joint/pretext
+work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/aimclr_joint/linear_eval
 
 # weights: /data/gty/released_model/ntu60_xsub_joint.pt
-weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/aimclr_joint/pretext/epoch1_model.pt
+weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/aimclr_joint/pretext/epoch300_model.pt
 ignore_weights: [encoder_q.fc, encoder_k, queue]
+resume: True
 
 # feeder
 train_feeder: feeder.ntu_feeder.Feeder_single
@@ -14,7 +15,7 @@ train_feeder_args:
   mmap: True
 test_feeder: feeder.ntu_feeder.Feeder_single
 test_feeder_args:
-  data_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xview/val_position.npy
+  data_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/val_position.npy
   label_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/val_label.pkl
   shear_amplitude: -1
   temperal_padding_ratio: -1
@@ -51,7 +52,7 @@ step: [80]
 device: [2]
 batch_size: 128
 test_batch_size: 128
-num_epoch: 1
+num_epoch: 100
 stream: 'joint'
 
 # log
