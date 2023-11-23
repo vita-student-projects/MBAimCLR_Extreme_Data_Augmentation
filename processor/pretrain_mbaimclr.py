@@ -32,6 +32,8 @@ class MBAimCLR_Processor(PT_Processor):
         self.adjust_lr()
         loader = self.data_loader['train']
         loss_value = []
+        infoloss_value = [] #ADD
+        lossd3m_value = [] #ADD
 
         for [data1, data2, data3], label in loader:
             self.global_step += 1
@@ -40,40 +42,6 @@ class MBAimCLR_Processor(PT_Processor):
             data2 = data2.float().to(self.dev, non_blocking=True)
             data3 = data3.float().to(self.dev, non_blocking=True)
             label = label.long().to(self.dev, non_blocking=True)
-
-            if self.arg.stream == 'joint':
-                pass
-            elif self.arg.stream == 'motion':
-                motion1 = torch.zeros_like(data1)
-                motion2 = torch.zeros_like(data2)
-                motion3 = torch.zeros_like(data3)
-
-                motion1[:, :, :-1, :, :] = data1[:, :, 1:, :, :] - data1[:, :, :-1, :, :]
-                motion2[:, :, :-1, :, :] = data2[:, :, 1:, :, :] - data2[:, :, :-1, :, :]
-                motion3[:, :, :-1, :, :] = data3[:, :, 1:, :, :] - data3[:, :, :-1, :, :]
-
-                data1 = motion1
-                data2 = motion2
-                data3 = motion3
-            elif self.arg.stream == 'bone':
-                Bone = [(1, 2), (2, 21), (3, 21), (4, 3), (5, 21), (6, 5), (7, 6), (8, 7), (9, 21),
-                        (10, 9), (11, 10), (12, 11), (13, 1), (14, 13), (15, 14), (16, 15), (17, 1),
-                        (18, 17), (19, 18), (20, 19), (21, 21), (22, 23), (23, 8), (24, 25), (25, 12)]
-
-                bone1 = torch.zeros_like(data1)
-                bone2 = torch.zeros_like(data2)
-                bone3 = torch.zeros_like(data3)
-
-                for v1, v2 in Bone:
-                    bone1[:, :, :, v1 - 1, :] = data1[:, :, :, v1 - 1, :] - data1[:, :, :, v2 - 1, :]
-                    bone2[:, :, :, v1 - 1, :] = data2[:, :, :, v1 - 1, :] - data2[:, :, :, v2 - 1, :]
-                    bone3[:, :, :, v1 - 1, :] = data3[:, :, :, v1 - 1, :] - data3[:, :, :, v2 - 1, :]
-
-                data1 = bone1
-                data2 = bone2
-                data3 = bone3
-            else:
-                raise ValueError
 
             # forward
             if epoch <= self.arg.mining_epoch:
@@ -97,6 +65,7 @@ class MBAimCLR_Processor(PT_Processor):
                 loss2 = -torch.mean(torch.sum(torch.log(output2) * target2, dim=1))  # DDM loss
                 loss3 = -torch.mean(torch.sum(torch.log(output3) * target2, dim=1))  # DDM loss
                 loss = loss1 + (loss2 + loss3) / 2.
+            lossd3m = (loss2+loss3)/2 #ADD
 
             # backward
             self.optimizer.zero_grad()
@@ -105,14 +74,22 @@ class MBAimCLR_Processor(PT_Processor):
 
             # statistics
             self.iter_info['loss'] = loss.data.item()
+            self.iter_info['infoNCE_loss'] = loss1.data.item() #ADD
+            self.iter_info['D3M_loss'] = lossd3m.data.item() #ADD
             self.iter_info['lr'] = '{:.6f}'.format(self.lr)
             loss_value.append(self.iter_info['loss'])
+            infoloss_value.append(self.iter_info['infoNCE_loss']) #ADD
+            lossd3m_value.append(self.iter_info['D3M_loss']) #ADD
             self.show_iter_info()
             self.meta_info['iter'] += 1
             self.train_log_writer(epoch)
 
         self.epoch_info['train_mean_loss'] = np.mean(loss_value)
+        self.epoch_info['train_mean_infoNCE_loss'] = np.mean(infoloss_value) #ADD
+        self.epoch_info['train_mean_D3M_loss'] = np.mean(lossd3m_value) #ADD
         self.train_writer.add_scalar('loss', self.epoch_info['train_mean_loss'], epoch)
+        self.train_writer.add_scalar('InfoNCE loss', self.epoch_info['train_mean_infoNCE_loss'], epoch) #ADD
+        self.train_writer.add_scalar('D3M loss', self.epoch_info['train_mean_D3M_loss'], epoch) #ADD
         self.show_epoch_info()
 
     @staticmethod

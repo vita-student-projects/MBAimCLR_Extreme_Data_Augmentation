@@ -60,7 +60,7 @@ class IO():
             gpus = torchlight.visible_gpu(self.arg.device)
             torchlight.occupy_gpu(gpus)
             self.gpus = gpus
-            self.dev = "cuda:0"
+            self.dev = "cuda:1"
         else:
             self.dev = "cpu"
 

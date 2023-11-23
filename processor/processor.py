@@ -62,8 +62,11 @@ class Processor(IO):
 
         self.global_step = 0
 
-    def train_log_writer(self, epoch):
+    def train_log_writer(self, epoch, show2l = True):
         self.train_writer.add_scalar('batch_loss', self.iter_info['loss'], self.global_step)
+        if show2l:
+            self.train_writer.add_scalar('batch InfoNCE loss', self.iter_info['infoNCE_loss'], self.global_step) #ADD
+            self.train_writer.add_scalar('batch D3M loss', self.iter_info['D3M_loss'], self.global_step) #ADD
         self.train_writer.add_scalar('lr', self.lr, self.global_step)
         self.train_writer.add_scalar('epoch', epoch, self.global_step)
 

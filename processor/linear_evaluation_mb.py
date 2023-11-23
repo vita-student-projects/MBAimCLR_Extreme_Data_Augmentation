@@ -147,7 +147,7 @@ class MBLE_Processor(Processor):
             loss_value.append(self.iter_info['loss'])
             self.show_iter_info()
             self.meta_info['iter'] += 1
-            self.train_log_writer(epoch)
+            self.train_log_writer(epoch,False)#ADD
 
         self.epoch_info['train_mean_loss']= np.mean(loss_value)
         self.train_writer.add_scalar('loss', self.epoch_info['train_mean_loss'], epoch)

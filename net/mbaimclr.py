@@ -7,9 +7,9 @@ import sys
 
 
 class MBAimCLR(nn.Module):
-    def __init__(self, base_encoder=None, pretrain=True, feature_dim=128, queue_size=32768,
-                 momentum=0.999, Temperature=0.07, mlp=True, in_channels=3, out_channels = 128,
-                 hidden_dim=256, num_class=-1, dropout=0.5, depth = 5, num_heads = 8, mlp_ratio = 2,
+    def __init__(self, base_encoder=None, pretrain=True, dim_feat=512, queue_size=32768,
+                 momentum=0.999, Temperature=0.07, in_channels=3, out_channels = 128,
+                 dim_rep=256, num_class=60, depth = 5, num_heads = 8, mlp_ratio = 2,
                  num_joints = 25, clip_len = 50):
         """
         K: queue size; number of negative keys (default: 32768)
@@ -21,7 +21,7 @@ class MBAimCLR(nn.Module):
         self.pretrain = pretrain
 
         if not self.pretrain:
-            self.encoder_q = base_encoder(dim_in=in_channels, dim_out=num_class, dim_feat=feature_dim, dim_rep=hidden_dim,
+            self.encoder_q = base_encoder(dim_in=in_channels, dim_out=num_class, dim_feat=dim_feat, dim_rep=dim_rep,
                                           depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
                                           maxlen=clip_len)
         else:
@@ -29,10 +29,10 @@ class MBAimCLR(nn.Module):
             self.m = momentum
             self.T = Temperature
 
-            self.encoder_q = base_encoder(dim_in=in_channels, dim_out=out_channels, dim_feat=feature_dim, dim_rep=hidden_dim,
+            self.encoder_q = base_encoder(dim_in=in_channels, dim_out=out_channels, dim_feat=dim_feat, dim_rep=dim_rep,
                                           depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
                                           maxlen=clip_len)
-            self.encoder_k = base_encoder(dim_in=in_channels, dim_out=out_channels, dim_feat=feature_dim, dim_rep=hidden_dim,
+            self.encoder_k = base_encoder(dim_in=in_channels, dim_out=out_channels, dim_feat=dim_feat, dim_rep=dim_rep,
                                           depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
                                           maxlen=clip_len)
 
@@ -50,7 +50,7 @@ class MBAimCLR(nn.Module):
                 param_k.requires_grad = False  # not update by gradient
 
             # create the queue
-            self.register_buffer("queue", torch.randn(feature_dim, queue_size))
+            self.register_buffer("queue", torch.randn(out_channels, queue_size))
             self.queue = F.normalize(self.queue, dim=0)
             self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
 
@@ -86,9 +86,7 @@ class MBAimCLR(nn.Module):
             return self.nearest_neighbors_mining(im_q, im_k, im_q_extreme, topk)
 
         if not self.pretrain:
-            debug = self.encoder_q(im_q)
-            print(debug.size)
-            return debug
+            return self.encoder_q(im_q)
 
         # Obtain the normally augmented query feature
         q = self.encoder_q(im_q)  # NxC
