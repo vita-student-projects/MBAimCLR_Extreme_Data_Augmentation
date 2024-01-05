@@ -1,92 +1,77 @@
-# AimCLR
+# MBAimCLR (based on [MotionBert](https://github.com/Walter0807/MotionBERT) and [AimCLR](https://github.com/Levigty/AimCLR/tree/main))
 
-This is an official PyTorch implementation of **"Contrastive Learning from Extremely Augmented Skeleton Sequences for Self-supervised Action Recognition" in AAAI2022**. 
+## Table of Contents :
 
-![](./fig/pipe.png)
+1. [Introduction](#1-introduction)
+2. [Installation](#2-installation)
+3. [Training Dataset](#3-training-dataset)
+4. [Training](#4-training)
+5. [Linear Evaluation](#5-linear-evaluation)
 
-## Requirements
-  ![Python >=3.6](https://img.shields.io/badge/Python->=3.6-yellow.svg)    ![PyTorch >=1.6](https://img.shields.io/badge/PyTorch->=1.4-blue.svg)
+## 1. Introduction
 
-## Data Preparation
-- Download the raw data of [NTU RGB+D](https://github.com/shahroudy/NTURGB-D) and [PKU-MMD](https://www.icst.pku.edu.cn/struct/Projects/PKUMMD.html).
-- For NTU RGB+D dataset, preprocess data with `tools/ntu_gendata.py`. For PKU-MMD dataset, preprocess data with `tools/pku_part1_gendata.py`.
-- Then downsample the data to 50 frames with `feeder/preprocess_ntu.py` and `feeder/preprocess_pku.py`.
-- If you don't want to process the original data, download the file folder in Google Drive [action_dataset](https://drive.google.com/drive/folders/1VnD3CLcD7bT5fMGI3tDGPlcWZmBbXS0m?usp=sharing) or BaiduYun link [action_dataset](https://pan.baidu.com/s/1NRK1ksRHgng_NkOO1ZYTcQ), code: 0211. NTU-120 is also provided: [NTU-120-frame50](https://drive.google.com/drive/folders/1dn8VMcT9BYi0KHBkVVPFpiGlaTn2GnaX?usp=sharing).
+This project propose a model that uses the self-supervised learning framework from AimCLR to apply extreme data augmentations to the motion encoder DSTformer from MotionBERT. It is trained and evaluate on the NTU RGB+D 60 and 120 dataset. For more information about the model and its performance you can read the files in the folder report.
 
-## Installation
-  ```bash
+This project was made in the context of a semester project done at [VITA](https://www.epfl.ch/labs/vita/) lab, for the Robotic Master at EPFL. The goal was to study the impact the framework on a state of the art transformer method for action recognition task.
+
+## 2. Installation
+
+To install the project and be able to run it, you need to follow the following steps:
+
+1. Clone the repository:
+2. Install the requirements:
+
+the required packages and python version :
+
+```bash
+conda create -n mbpip python=3.7 anaconda
+conda activate mbpip
+# Please install PyTorch according to your CUDA version.
+conda install pytorch torchvision torchaudio pytorch-cuda=11.6 -c pytorch -c nvidia
+pip install -r requirements.txt
+```
+and torchlight which is a function wrapper for pytorch :
+
+```bash
 # Install torchlight
 $ cd torchlight
 $ python setup.py install
-$ cd ..
-  
-# Install other python libraries
-$ pip install -r requirements.txt
-  ```
+```
 
-## Unsupervised Pre-Training
+4. If you want to use a already trained model, download the checkpoint from [here](https://drive.google.com/drive/u/0/folders/1QsNa07lTkTcnFVrvxEZ1RhJnvW1jtbug).
 
-Example for unsupervised pre-training of **3s-AimCLR**. You can change some settings of `.yaml` files in `config/ntu60/pretext` folder.
+## 3. Training Dataset
+
+The already generated dataset can be downloaded from : [NTU-60](https://drive.google.com/drive/folders/1WrTG9g-dit7RnaXZ6MR5STOiuaEptfuf) and [NTU-120](https://drive.google.com/drive/folders/1dn8VMcT9BYi0KHBkVVPFpiGlaTn2GnaX). To generate the dataset yourself, see the procedure [here](https://github.com/Levigty/AimCLR/blob/main/README.md) under Data Preparation
+
+## 4. Training
+
+1. Fill the config file corresponding to what you want to train with the paths to the dataset.
+4. Run the following command:
+
+#### From scracth :
 ```bash
-# train on NTU RGB+D xview joint stream
-$ python main.py pretrain_aimclr --config config/ntu60/pretext/pretext_aimclr_xview_joint.yaml
-
-# train on NTU RGB+D xview motion stream
-$ python main.py pretrain_aimclr --config config/ntu60/pretext/pretext_aimclr_xview_motion.yaml
-
-# train on NTU RGB+D xview bone stream
-$ python main.py pretrain_aimclr --config config/ntu60/pretext/pretext_aimclr_xview_bone.yaml
+python main.py pretrain_mbaimclr --config config/<your_config_file>.yaml
 ```
+#### From a checkpoint :
 
-## Linear Evaluation
+It is the same command, you just need to adapt the config file with resume set to True and the path to the weights.
 
-Example for linear evaluation of **3s-AimCLR**. You can change `.yaml` files in `config/ntu60/linear_eval` folder.
+### Visualize logs with Tensorboard
+
+The code will automatically create two folders named `train` and `val` in the working directory you put in the config file. You can visualize the logs with Tensorboard by running the following command:
+
 ```bash
-# Linear_eval on NTU RGB+D xview
-$ python main.py linear_evaluation --config config/ntu60/linear_eval/linear_eval_aimclr_xview_joint.yaml
-
-$ python main.py linear_evaluation --config config/ntu60/linear_eval/linear_eval_aimclr_xview_motion.yaml
-
-$ python main.py linear_evaluation --config config/ntu60/linear_eval/linear_eval_aimclr_xview_bone.yaml
+tensorboard --logdir=<path_to_the_working_directory>/
 ```
 
-## Trained models
+## 5. Linear Evaluation
 
-We release several trained models in [released_model](https://drive.google.com/drive/folders/1VnD3CLcD7bT5fMGI3tDGPlcWZmBbXS0m?usp=sharing). The performance is better than that reported in the paper. You can download them and test them with linear evaluation by changing `weights` in `.yaml` files.
+In this part we will explain how to evaluate the model.
 
-For three-streams results, you can train three separate models and ensemble the results, or you can use three models in one `.py` file, similar to `net/crossclr_3views.py`.
+1. Fill the corresponding config file in the `config` folder by putting the path of the model and the data.
+4. Run the following command:
 
-|     Model     | NTU 60 xsub (%) | NTU 60 xview (%) | PKU-MMD Part I (%) |
-| :-----------: | :-------------: | :--------------: | :----------------: |
-| AimCLR-joint  |      74.34      |      79.68       |       83.43        |
-| AimCLR-motion |      68.68      |      71.83       |       72.00        |
-|  AimCLR-bone  |      71.87      |      77.02       |       82.03        |
-|   3s-AimCLR   |    **79.18**    |    **84.02**     |     **87.79**      |
-
-## Visualization
-
-The [**t-SNE**](https://www.jmlr.org/papers/volume9/vandermaaten08a/vandermaaten08a.pdf) visualization of the embeddings after AimCLR pre-training on NTU60-xsub.
-
-![](./fig/tsne.png)
-
-
-## Citation
-Please cite our paper if you find this repository useful in your resesarch:
-
+```bash
+python main.py linear_evaluation_mb --config config/<your_config_file>.yaml
 ```
-@inproceedings{guo2022aimclr,
-  Title= {Contrastive Learning from Extremely Augmented Skeleton Sequences for Self-supervised Action Recognition},
-  Author= {Tianyu, Guo and Hong, Liu and Zhan, Chen and Mengyuan, Liu and Tao, Wang  and Runwei, Ding},
-  Booktitle= {AAAI},
-  Year= {2022}
-}
-```
-
-## Acknowledgement
-The framework of our code is extended from the following repositories. We sincerely thank the authors for releasing the codes.
-- The framework of our code is based on [CrosSCLR](https://github.com/LinguoLi/CrosSCLR).
-- The encoder is based on [ST-GCN](https://github.com/yysijie/st-gcn/blob/master/OLD_README.md).
-
-## Licence
-
-This project is licensed under the terms of the MIT license.
