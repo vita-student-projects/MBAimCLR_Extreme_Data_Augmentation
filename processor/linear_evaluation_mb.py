@@ -29,7 +29,7 @@ def weights_init(m):
 
 class MBLE_Processor(Processor):
     """
-        Processor for Linear Evaluation Motion Bert.
+        Processor for Linear Evaluation Motion Bert and Vanilla Transformer backbone.
     """
 
     def load_model(self):
@@ -40,22 +40,22 @@ class MBLE_Processor(Processor):
         for name, param in self.model.encoder_q.named_parameters():
             if name not in ['head.weight', 'head.bias']:
                 param.requires_grad = False
-        self.num_grad_layers = 2
-        if hasattr(self.model, 'encoder_q_motion'):
-            for name, param in self.model.encoder_q_motion.named_parameters():
-                if name not in ['head.weight', 'head.bias']:
-                    param.requires_grad = False
-            self.num_grad_layers += 2
-        if hasattr(self.model, 'encoder_q_bone'):
-            for name, param in self.model.encoder_q_bone.named_parameters():
-                if name not in ['head.weight', 'head.bias']:
-                    param.requires_grad = False
-            self.num_grad_layers += 2
+        
+        #added
+        # Allows us to have the right number of layers for the count
+        if self.arg.model == 'net.mbaimclr.MBAimCLR':
+            self.num_grad_layers = 8
+        elif self.arg.model == 'net.transclr.TransCLR':
+            self.num_grad_layers = 2
+        else:
+            raise ValueError
+        
 
         self.loss = nn.CrossEntropyLoss()
         
     def load_optimizer(self):
         parameters = list(filter(lambda p: p.requires_grad, self.model.parameters()))
+        print(len(parameters))
         assert len(parameters) == self.num_grad_layers
         if self.arg.optimizer == 'SGD':
             self.optimizer = optim.SGD(
@@ -112,23 +112,6 @@ class MBLE_Processor(Processor):
             
             if self.arg.stream == 'joint':
                 pass
-            elif self.arg.stream == 'motion':
-                motion = torch.zeros_like(data)
-
-                motion[:, :, :-1, :, :] = data[:, :, 1:, :, :] - data[:, :, :-1, :, :]
-
-                data = motion
-            elif self.arg.stream == 'bone':
-                Bone = [(1, 2), (2, 21), (3, 21), (4, 3), (5, 21), (6, 5), (7, 6), (8, 7), (9, 21),
-                        (10, 9), (11, 10), (12, 11), (13, 1), (14, 13), (15, 14), (16, 15), (17, 1),
-                        (18, 17), (19, 18), (20, 19), (21, 21), (22, 23), (23, 8), (24, 25), (25, 12)]
-
-                bone = torch.zeros_like(data)
-
-                for v1, v2 in Bone:
-                    bone[:, :, :, v1 - 1, :] = data[:, :, :, v1 - 1, :] - data[:, :, :, v2 - 1, :]
-                    
-                data = bone
             else:
                 raise ValueError
 
@@ -147,11 +130,14 @@ class MBLE_Processor(Processor):
             loss_value.append(self.iter_info['loss'])
             self.show_iter_info()
             self.meta_info['iter'] += 1
-            self.train_log_writer(epoch,False)#ADD
+            if self.arg.loop:
+                self.train_log_writer(epoch,False)#added
 
         self.epoch_info['train_mean_loss']= np.mean(loss_value)
         self.train_writer.add_scalar('loss', self.epoch_info['train_mean_loss'], epoch)
         self.show_epoch_info()
+        if self.arg.loop:
+            self.meta_info['iter'] = 0
 
     def test(self, epoch):
         self.model.eval()
@@ -167,23 +153,6 @@ class MBLE_Processor(Processor):
             
             if self.arg.stream == 'joint':
                 pass
-            elif self.arg.stream == 'motion':
-                motion = torch.zeros_like(data)
-
-                motion[:, :, :-1, :, :] = data[:, :, 1:, :, :] - data[:, :, :-1, :, :]
-
-                data = motion
-            elif self.arg.stream == 'bone':
-                Bone = [(1, 2), (2, 21), (3, 21), (4, 3), (5, 21), (6, 5), (7, 6), (8, 7), (9, 21),
-                        (10, 9), (11, 10), (12, 11), (13, 1), (14, 13), (15, 14), (16, 15), (17, 1),
-                        (18, 17), (19, 18), (20, 19), (21, 21), (22, 23), (23, 8), (24, 25), (25, 12)]
-
-                bone = torch.zeros_like(data)
-
-                for v1, v2 in Bone:
-                    bone[:, :, :, v1 - 1, :] = data[:, :, :, v1 - 1, :] - data[:, :, :, v2 - 1, :]
-                    
-                data = bone
             else:
                 raise ValueError
 

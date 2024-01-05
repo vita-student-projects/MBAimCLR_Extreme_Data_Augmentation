@@ -1,21 +1,22 @@
-work_dir: /data/gty/AAAI_github/pkup1cs/aimclr_motion/linear_eval
+work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/aimclr_joint/linear_eval/loop
 
-# weights: /data/gty/released_model/pkup1cs_motion.pt
-weights: /data/gty/AAAI_github/pkup1cs/aimclr_motion/pretext/epoch300_model.pt
+# weights: /data/gty/released_model/ntu60_xsub_joint.pt
+#weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/aimclr_joint/pretext/epoch300_model.pt
 ignore_weights: [encoder_q.fc, encoder_k, queue]
+resume: True
 
 # feeder
 train_feeder: feeder.ntu_feeder.Feeder_single
 train_feeder_args:
-  data_path: /data/gty/action_dataset/pku_part1_frame50/xsub/train_position.npy
-  label_path: /data/gty/action_dataset/pku_part1_frame50/xsub/train_label.pkl
+  data_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/train_position.npy
+  label_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/train_label.pkl
   shear_amplitude: -1
   temperal_padding_ratio: -1
   mmap: True
 test_feeder: feeder.ntu_feeder.Feeder_single
 test_feeder_args:
-  data_path: /data/gty/action_dataset/pku_part1_frame50/xsub/val_position.npy
-  label_path: /data/gty/action_dataset/pku_part1_frame50/xsub/val_label.pkl
+  data_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/val_position.npy
+  label_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/val_label.pkl
   shear_amplitude: -1
   temperal_padding_ratio: -1
   mmap: True
@@ -33,7 +34,7 @@ model_args:
   in_channels: 3
   hidden_channels: 16
   hidden_dim: 256
-  num_class: 51
+  num_class: 60
   dropout: 0.5
   graph_args:
     layout: 'ntu-rgb+d'
@@ -51,9 +52,9 @@ step: [80]
 device: [2]
 batch_size: 128
 test_batch_size: 128
-num_epoch: 100
-stream: 'motion'
+num_epoch: 1
+stream: 'joint'
 
 # log
-save_interval: -1
-eval_interval: 5
+#save_interval: -1
+#eval_interval: 5

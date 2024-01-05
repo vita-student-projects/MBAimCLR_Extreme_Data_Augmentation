@@ -333,7 +333,7 @@ class DSTformer(nn.Module):
 
     def forward(self, x, return_rep=False, drop = False):
 
-        ###ADD
+        # permute the data to have the right order for DSTformer
         N, C, T, V, M = x.size()
         x = x.permute(0,4,2,3,1).contiguous()
         x = x.view(N*M,T,V,C)
@@ -365,9 +365,9 @@ class DSTformer(nn.Module):
         x = self.pre_logits(x)        # [B, F, J, dim_feat]
 
         if return_rep:
-            return x
+            return x.view([N, M, T, V, -1]) # to have the right format expected by the action head
         
-        ###ADD
+        # apply the energy drop if it is needed
         if drop:
             x = x.permute(0,3,1,2)
             y = self.eadm(x)
@@ -381,7 +381,7 @@ class DSTformer(nn.Module):
             y = self.head(y)
             return x,y
         
-        ###ADD
+        # permute the data to come back to how it is represented in AimCLR
         x = x.permute(0,3,1,2)
         x = Func.avg_pool2d(x, x.size()[2:])
         x = x.view(N,M,-1).mean(dim=1)

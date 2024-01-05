@@ -43,7 +43,8 @@ class Processor(IO):
         self.init_environment()
 
         if self.arg.phase == 'train':
-            if os.path.isdir(self.arg.work_dir + '/train') and not self.arg.resume: ##ADD
+            # remove previous logs if it exists and we're not resuming
+            if os.path.isdir(self.arg.work_dir + '/train') and not self.arg.resume:
                 print('log_dir: ', self.arg.work_dir, 'already exist')
                 shutil.rmtree(self.arg.work_dir + '/train')
                 shutil.rmtree(self.arg.work_dir + '/val')
@@ -65,8 +66,8 @@ class Processor(IO):
     def train_log_writer(self, epoch, show2l = True):
         self.train_writer.add_scalar('batch_loss', self.iter_info['loss'], self.global_step)
         if show2l:
-            self.train_writer.add_scalar('batch InfoNCE loss', self.iter_info['infoNCE_loss'], self.global_step) #ADD
-            self.train_writer.add_scalar('batch D3M loss', self.iter_info['D3M_loss'], self.global_step) #ADD
+            self.train_writer.add_scalar('batch InfoNCE loss', self.iter_info['infoNCE_loss'], self.global_step) #added
+            self.train_writer.add_scalar('batch D3M loss', self.iter_info['D3M_loss'], self.global_step) #added
         self.train_writer.add_scalar('lr', self.lr, self.global_step)
         self.train_writer.add_scalar('epoch', epoch, self.global_step)
 
@@ -175,42 +176,65 @@ class Processor(IO):
             self.best_result = 0.0
             
             for epoch in range(self.arg.start_epoch, self.arg.num_epoch):
-                self.meta_info['epoch'] = epoch + 1
 
-                # training
-                self.io.print_log('Training epoch: {}'.format(epoch + 1))
-                self.train(epoch + 1)
+                # if we are not looping, we have normal training/evaluation behavior
+                if not self.arg.loop:
+                    self.meta_info['epoch'] = epoch + 1
 
-                # save model
-                if self.arg.save_interval == -1:
-                    pass
-                elif ((epoch + 1) % self.arg.save_interval == 0) or (
-                        epoch + 1 == self.arg.num_epoch):
-                    filename = 'epoch{}_model.pt'.format(epoch + 1)
-                    self.io.save_model(self.model, filename)
+                    # training
+                    self.io.print_log('Training epoch: {}'.format(epoch + 1))
+                    self.train(epoch + 1)
 
-                # evaluation
-                if self.arg.eval_interval == -1:
-                    pass
-                elif ((epoch + 1) % self.arg.eval_interval == 0) or (
-                        epoch + 1 == self.arg.num_epoch):
-                    self.io.print_log('Eval epoch: {}'.format(epoch + 1))
-                    self.test(epoch + 1)
+                    # save model
+                    if self.arg.save_interval == -1:
+                        pass
+                    elif ((epoch + 1) % self.arg.save_interval == 0) or (
+                            epoch + 1 == self.arg.num_epoch):
+                        filename = 'epoch{}_model.pt'.format(epoch + 1)
+                        self.io.save_model(self.model, filename)
+
+                    # evaluation
+                    if self.arg.eval_interval == -1:
+                        pass
+                    elif ((epoch + 1) % self.arg.eval_interval == 0) or (
+                            epoch + 1 == self.arg.num_epoch):
+                        
+                        self.io.print_log('Eval epoch: {}'.format(epoch + 1))
+                        self.test(epoch + 1)
+                        self.io.print_log("current %.2f%%, best %.2f%%" % 
+                                                (self.current_result, self.best_result))
+
+                        # save best model
+                        filename = 'epoch%.3d_acc%.2f_model.pt' % (epoch + 1, self.current_result)
+                        self.io.save_model(self.model, filename)
+                        if self.current_result >= self.best_result:
+                            filename = 'best_model.pt'
+                            self.io.save_model(self.model, filename)
+                            # save the output of model
+                            if self.arg.save_result:
+                                result_dict = dict(
+                                    zip(self.data_loader['test'].dataset.sample_name,
+                                        self.result))
+                                self.io.save_pkl(result_dict, 'test_result.pkl')
+
+                # if we are looping, we just train/evaluate for 1 epoch and then exit
+                else:
+                    self.meta_info['epoch'] = self.arg.mod_epoch
+
+                    # training
+                    self.io.print_log('Training model from epoch: {}'.format(self.arg.mod_epoch))
+                    self.train(self.arg.mod_epoch)
+
+                    # evaluation
+                    self.io.print_log('Eval epoch: {}'.format(self.arg.mod_epoch))
+                    self.test(self.arg.mod_epoch)
                     self.io.print_log("current %.2f%%, best %.2f%%" % 
                                             (self.current_result, self.best_result))
 
                     # save best model
-                    filename = 'epoch%.3d_acc%.2f_model.pt' % (epoch + 1, self.current_result)
-                    self.io.save_model(self.model, filename)
-                    if self.current_result >= self.best_result:
-                        filename = 'best_model.pt'
-                        self.io.save_model(self.model, filename)
-                        # save the output of model
-                        if self.arg.save_result:
-                            result_dict = dict(
-                                zip(self.data_loader['test'].dataset.sample_name,
-                                    self.result))
-                            self.io.save_pkl(result_dict, 'test_result.pkl')
+                    filename = 'epoch%.3d_acc%.2f_model.pt' % (self.arg.mod_epoch, self.current_result)
+                    self.io.save_model(self.model, filename) 
+
 
         # test phase
         elif self.arg.phase == 'test':
@@ -242,6 +266,8 @@ class Processor(IO):
 
         parser.add_argument('-w', '--work_dir', default='./work_dir/tmp', help='the work folder for storing results')
         parser.add_argument('-c', '--config', default=None, help='path to the configuration file')
+        parser.add_argument('-l', '--loop', type=str2bool, default=False, help='loop check') #added
+        parser.add_argument('-le', '--lepch', type=int, default=300, help='end loop epoch') #added
 
         # processor
         parser.add_argument('--phase', default='train', help='must be train or test')
@@ -274,6 +300,7 @@ class Processor(IO):
         parser.add_argument('--model_args', action=DictAction, default=dict(), help='the arguments of model')
         parser.add_argument('--weights', default=None, help='the weights for network initialization')
         parser.add_argument('--ignore_weights', type=str, default=[], nargs='+', help='the name of weights which will be ignored in the initialization')
-        parser.add_argument('--resume', type=str2bool, default=False)###ADD
+        parser.add_argument('--resume', type=str2bool, default=False, help='if we are resuming the training from a checkpoint')#added
+        parser.add_argument('--mod_epoch', type=int, default=0, help='transmit which epoch of pretraining the model come from') #added
         
         return parser

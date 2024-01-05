@@ -2,16 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchlight import import_class
-from net.model_action import ActionHeadClassification
 
 import sys
 
-
-class MBAimCLR(nn.Module):
-    def __init__(self, base_encoder=None, pretrain=True, dim_feat=512, queue_size=32768,
+class TransCLR(nn.Module):
+    def __init__(self, base_encoder=None, pretrain=True, dim_feat=256, queue_size=32768,
                  momentum=0.999, Temperature=0.07, in_channels=3, out_channels = 128,
-                 dim_rep=256, num_class=60, depth = 5, num_heads = 8, mlp_ratio = 2,
-                 num_joints = 25, clip_len = 50, dropout_ratio = 0.5, hidden_dim = 2048):
+                 num_class=60, depth = 5, num_heads = 8, mlp_ratio = 4,
+                 num_joints = 25, clip_len = 50, patch_size=1, t_patch_size=5):
         """
         K: queue size; number of negative keys (default: 32768)
         m: momentum of updating key encoder (default: 0.999)
@@ -22,22 +20,29 @@ class MBAimCLR(nn.Module):
         self.pretrain = pretrain
 
         if not self.pretrain:
-            self.encoder_q = base_encoder(dim_in=in_channels, dim_out=num_class, dim_feat=dim_feat, dim_rep=dim_rep,
-                                          depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
-                                          maxlen=clip_len)
-            self.actionHead = ActionHeadClassification(dropout_ratio=dropout_ratio,dim_rep=dim_rep,num_classes=num_class,
-                                                       num_joints=num_joints,hidden_dim=hidden_dim)
+            self.encoder_q = base_encoder(dim_in=in_channels, dim_out=num_class, dim_feat=dim_feat, depth=depth, 
+                                          num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
+                                          num_frames=clip_len, patch_size=patch_size, t_patch_size=t_patch_size)
         else:
             self.K = queue_size
             self.m = momentum
             self.T = Temperature
 
-            self.encoder_q = base_encoder(dim_in=in_channels, dim_out=out_channels, dim_feat=dim_feat, dim_rep=dim_rep,
-                                          depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
-                                          maxlen=clip_len)
-            self.encoder_k = base_encoder(dim_in=in_channels, dim_out=out_channels, dim_feat=dim_feat, dim_rep=dim_rep,
-                                          depth=depth, num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
-                                          maxlen=clip_len)
+            self.encoder_q = base_encoder(dim_in=in_channels, dim_out=out_channels, dim_feat=dim_feat, depth=depth, 
+                                          num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
+                                          num_frames=clip_len, patch_size=patch_size, t_patch_size=t_patch_size)
+            self.encoder_k = base_encoder(dim_in=in_channels, dim_out=out_channels, dim_feat=dim_feat, depth=depth, 
+                                          num_heads=num_heads, mlp_ratio=mlp_ratio, num_joints=num_joints,
+                                          num_frames=clip_len, patch_size=patch_size, t_patch_size=t_patch_size)
+
+            # if num_class != -1:  # hack: brute-force replacement
+            #     dim_mlp = self.encoder_q.fc.weight.shape[1]
+            #     self.encoder_q.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp),
+            #                                       nn.ReLU(),
+            #                                       self.encoder_q.fc)
+            #     self.encoder_k.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp),
+            #                                       nn.ReLU(),
+            #                                       self.encoder_k.fc)
 
             for param_q, param_k in zip(self.encoder_q.parameters(), self.encoder_k.parameters()):
                 param_k.data.copy_(param_q.data)  # initialize
@@ -80,8 +85,7 @@ class MBAimCLR(nn.Module):
             return self.nearest_neighbors_mining(im_q, im_k, im_q_extreme, topk)
 
         if not self.pretrain:
-            feat = self.encoder_q(im_q,return_rep=True)
-            return self.actionHead(feat)
+            return self.encoder_q(im_q)
 
         # Obtain the normally augmented query feature
         q = self.encoder_q(im_q)  # NxC
@@ -99,6 +103,12 @@ class MBAimCLR(nn.Module):
 
             k = self.encoder_k(im_k)  # keys: NxC
             k = F.normalize(k, dim=1)
+
+        '''print(f'q : {q.shape}')
+        print(f'q_extreme : {q_extreme.shape}')
+        print(f'q_extreme_drop : {q_extreme_drop.shape}')
+        print(f'k : {k.shape}')
+        sys.stdout.flush()'''
 
         # Compute logits of normally augmented query using Einstein sum
         # positive logits: Nx1

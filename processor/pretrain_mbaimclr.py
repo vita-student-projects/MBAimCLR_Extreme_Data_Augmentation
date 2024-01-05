@@ -32,8 +32,8 @@ class MBAimCLR_Processor(PT_Processor):
         self.adjust_lr()
         loader = self.data_loader['train']
         loss_value = []
-        infoloss_value = [] #ADD
-        lossd3m_value = [] #ADD
+        infoloss_value = [] 
+        lossd3m_value = [] 
 
         for [data1, data2, data3], label in loader:
             self.global_step += 1
@@ -65,7 +65,7 @@ class MBAimCLR_Processor(PT_Processor):
                 loss2 = -torch.mean(torch.sum(torch.log(output2) * target2, dim=1))  # DDM loss
                 loss3 = -torch.mean(torch.sum(torch.log(output3) * target2, dim=1))  # DDM loss
                 loss = loss1 + (loss2 + loss3) / 2.
-            lossd3m = (loss2+loss3)/2 #ADD
+            lossd3m = (loss2+loss3)/2 
 
             # backward
             self.optimizer.zero_grad()
@@ -74,22 +74,22 @@ class MBAimCLR_Processor(PT_Processor):
 
             # statistics
             self.iter_info['loss'] = loss.data.item()
-            self.iter_info['infoNCE_loss'] = loss1.data.item() #ADD
-            self.iter_info['D3M_loss'] = lossd3m.data.item() #ADD
+            self.iter_info['infoNCE_loss'] = loss1.data.item() 
+            self.iter_info['D3M_loss'] = lossd3m.data.item() 
             self.iter_info['lr'] = '{:.6f}'.format(self.lr)
             loss_value.append(self.iter_info['loss'])
-            infoloss_value.append(self.iter_info['infoNCE_loss']) #ADD
-            lossd3m_value.append(self.iter_info['D3M_loss']) #ADD
+            infoloss_value.append(self.iter_info['infoNCE_loss']) 
+            lossd3m_value.append(self.iter_info['D3M_loss']) 
             self.show_iter_info()
             self.meta_info['iter'] += 1
             self.train_log_writer(epoch)
 
         self.epoch_info['train_mean_loss'] = np.mean(loss_value)
-        self.epoch_info['train_mean_infoNCE_loss'] = np.mean(infoloss_value) #ADD
-        self.epoch_info['train_mean_D3M_loss'] = np.mean(lossd3m_value) #ADD
+        self.epoch_info['train_mean_infoNCE_loss'] = np.mean(infoloss_value) 
+        self.epoch_info['train_mean_D3M_loss'] = np.mean(lossd3m_value) 
         self.train_writer.add_scalar('loss', self.epoch_info['train_mean_loss'], epoch)
-        self.train_writer.add_scalar('InfoNCE loss', self.epoch_info['train_mean_infoNCE_loss'], epoch) #ADD
-        self.train_writer.add_scalar('D3M loss', self.epoch_info['train_mean_D3M_loss'], epoch) #ADD
+        self.train_writer.add_scalar('InfoNCE loss', self.epoch_info['train_mean_infoNCE_loss'], epoch) 
+        self.train_writer.add_scalar('D3M loss', self.epoch_info['train_mean_D3M_loss'], epoch) 
         self.show_epoch_info()
 
     @staticmethod

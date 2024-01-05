@@ -1,7 +1,7 @@
-work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/linear_eval/action_head/xsub
+work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/transclr_joint/linear_eval/loop
 
 # weights: /data/gty/released_model/ntu60_xsub_joint.pt
-weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/pretext/epoch150_model.pt
+# weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/transclr_joint/pretext/epoch300_model.pt
 ignore_weights: [encoder_q.head, encoder_k, queue]
 resume: True
 
@@ -22,31 +22,27 @@ test_feeder_args:
   mmap: True
 
 # model
-model: net.mbaimclr.MBAimCLR
+model: net.transclr.TransCLR
 model_args:
-  base_encoder: net.DSTformer.DSTformer
+  base_encoder: net.transformer.Transformer
   pretrain: False
-  dim_feat: 512
+  dim_feat: 256
   queue_size: 32768
   momentum: 0.999
   Temperature: 0.07
   in_channels: 3
   out_channels: 128
   num_class: 60
-  dim_rep: 512
   depth: 4
   num_heads: 8
-  mlp_ratio: 2
+  mlp_ratio: 4
   num_joints: 25
   clip_len: 50
-  dropout_ratio: 0.5
-  hidden_dim: 2048
-
 
 # optim
 nesterov: False
 weight_decay: 0.0
-base_lr: 0.001
+base_lr: 0.1
 optimizer: SGD
 step: [80]
 
@@ -54,9 +50,9 @@ step: [80]
 device: [2]
 batch_size: 8
 test_batch_size: 8
-num_epoch: 100
+num_epoch: 1
 stream: 'joint'
 
 # log
-save_interval: -1
-eval_interval: 5
+#save_interval: -1
+#eval_interval: 5

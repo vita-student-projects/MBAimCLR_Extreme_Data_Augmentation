@@ -1,22 +1,22 @@
-work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/linear_eval/action_head/xsub
+work_dir: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/linear_eval/action_head/xview
 
 # weights: /data/gty/released_model/ntu60_xsub_joint.pt
-weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/pretext/epoch150_model.pt
+weights: /home/hinard/MBAimCLR/data/gty/AAAI_github/ntu60_cv/mbaimclr_joint/pretext/xview/epoch50_model.pt
 ignore_weights: [encoder_q.head, encoder_k, queue]
 resume: True
 
 # feeder
 train_feeder: feeder.ntu_feeder.Feeder_single
 train_feeder_args:
-  data_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/train_position.npy
-  label_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/train_label.pkl
+  data_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xview/train_position.npy
+  label_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xview/train_label.pkl
   shear_amplitude: -1
   temperal_padding_ratio: -1
   mmap: True
 test_feeder: feeder.ntu_feeder.Feeder_single
 test_feeder_args:
-  data_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/val_position.npy
-  label_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xsub/val_label.pkl
+  data_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xview/val_position.npy
+  label_path: /home/hinard/MBAimCLR/data/gty/action_dataset/ntu60_frame50/xview/val_label.pkl
   shear_amplitude: -1
   temperal_padding_ratio: -1
   mmap: True

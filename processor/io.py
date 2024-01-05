@@ -56,11 +56,11 @@ class IO():
 
         # gpu
         if self.arg.use_gpu:
-            print(torch.cuda.is_available())###ADD###
+            print(torch.cuda.is_available())#added
             gpus = torchlight.visible_gpu(self.arg.device)
             torchlight.occupy_gpu(gpus)
             self.gpus = gpus
-            self.dev = "cuda:1"
+            self.dev = "cuda:0"
         else:
             self.dev = "cpu"
 
@@ -69,7 +69,7 @@ class IO():
                                         **(self.arg.model_args))
 
     def load_weights(self):
-        if self.arg.weights and self.arg.resume: ###ADD
+        if self.arg.weights and self.arg.resume: #added
             self.model = self.io.load_weights(self.model, self.arg.weights,
                                               self.arg.ignore_weights)
 
@@ -95,6 +95,8 @@ class IO():
 
         parser.add_argument('-w', '--work_dir', default='./work_dir/levi', help='the work folder for storing results')
         parser.add_argument('-c', '--config', default=None, help='path to the configuration file')
+        parser.add_argument('-l', '--loop', type=str2bool, default=False, help='loop check') #added
+        parser.add_argument('-le', '--lepch', type=int, default=300, help='end loop epoch') #added
 
         # processor
         parser.add_argument('--use_gpu', type=str2bool, default=True, help='use GPUs or not')
@@ -109,6 +111,6 @@ class IO():
         parser.add_argument('--model_args', action=DictAction, default=dict(), help='the arguments of model')
         parser.add_argument('--weights', default=None, help='the weights for network initialization')
         parser.add_argument('--ignore_weights', type=str, default=[], nargs='+', help='the name of weights which will be ignored in the initialization')
-        parser.add_argument('--resume', type=str2bool, default=False)###ADD
+        parser.add_argument('--resume', type=str2bool, default=False)#added
 
         return parser

@@ -35,7 +35,8 @@ class PT_Processor(Processor):
     def load_model(self):
         self.model = self.io.load_model(self.arg.model,
                                         **(self.arg.model_args))
-        self.model.apply(weights_init)
+        if self.arg.model != 'net.transclr.TransCLR': #added
+            self.model.apply(weights_init)
         self.loss = nn.CrossEntropyLoss()
         self.re_criterion = torch.nn.L1Loss(reduction='none')
         
